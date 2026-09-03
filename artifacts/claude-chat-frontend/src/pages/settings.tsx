@@ -18,10 +18,9 @@ export function SettingsLayout({ children, activeTab }: { children: ReactNode, a
 
       <aside className={`conversation-rail settings-rail ${railOpen ? 'conversation-rail-open' : 'conversation-rail-closed'}`}>
         <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between p-5 pt-7">
-            <Link href="/" className="back-to-chat">
-              <ArrowLeft size={16} />
-              <span>Return to chat</span>
+          <div className="flex items-center justify-between p-5 pt-7 pb-4">
+            <Link href="/" className="brand-lockup">
+              <img src="/discoveryez-logo.png" alt="DiscoveryEZ" />
             </Link>
             <button
               type="button"
@@ -31,6 +30,12 @@ export function SettingsLayout({ children, activeTab }: { children: ReactNode, a
             >
               <X size={18} />
             </button>
+          </div>
+          <div className="px-5 pb-2">
+            <Link href="/" className="back-to-chat text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1.5 hover:text-[hsl(var(--foreground))] transition-colors">
+              <ArrowLeft size={14} />
+              <span>Return to workspace</span>
+            </Link>
           </div>
           <nav className="flex-1 px-3 mt-4 space-y-1">
             <Link href="/settings/account" className={`settings-nav-item ${activeTab === 'account' ? 'active' : ''}`}>
@@ -132,28 +137,28 @@ export function SettingsBilling() {
           <div className="plan-card">
             <div className="plan-header">
               <div>
-                <div className="plan-name">Personal Space</div>
-                <div className="plan-price">$12 <span>/ month</span></div>
+                <div className="plan-name">DiscoveryEZ</div>
+                <div className="plan-price">$99 <span>/ month introductory rate</span></div>
               </div>
               <div className="plan-status">Active</div>
             </div>
-            <p className="plan-desc">A quiet space for personal thinking, with standard processing models and up to 5GB of file storage.</p>
+            <p className="plan-desc">14-day free trial, then $99 per month for the first three months and $149 per month thereafter.</p>
             <button type="button" className="settings-btn-secondary mt-4">Manage subscription</button>
           </div>
 
           <h3 className="mt-12">Usage</h3>
           <div className="usage-stats">
             <div className="usage-stat-row">
-              <div className="usage-label">Storage</div>
-              <div className="usage-value">1.2 GB <span className="usage-limit">/ 5 GB</span></div>
+              <div className="usage-label">Processing tokens</div>
+              <div className="usage-value">1.2M <span className="usage-limit">/ 3M</span></div>
             </div>
-            <div className="usage-bar"><div className="usage-fill" style={{width: '24%'}}></div></div>
+            <div className="usage-bar"><div className="usage-fill" style={{width: '40%'}}></div></div>
             
             <div className="usage-stat-row mt-6">
-              <div className="usage-label">High-depth model queries</div>
-              <div className="usage-value">42 <span className="usage-limit">/ 100</span></div>
+              <div className="usage-label">Active discovery cases</div>
+              <div className="usage-value">2 <span className="usage-limit">/ 3</span></div>
             </div>
-            <div className="usage-bar"><div className="usage-fill" style={{width: '42%'}}></div></div>
+            <div className="usage-bar"><div className="usage-fill" style={{width: '67%'}}></div></div>
           </div>
         </div>
       </div>
@@ -189,7 +194,7 @@ export function SettingsSupport() {
             <button type="button" className="support-link">
               <div>
                 <div className="support-link-title">Documentation</div>
-                <div className="support-link-desc">Guides on how to use Stillroom effectively.</div>
+                <div className="support-link-desc">Guides on how to use DiscoveryEZ effectively.</div>
               </div>
               <ArrowRight size={16} className="support-arrow" />
             </button>
@@ -206,7 +211,7 @@ export function SettingsSupport() {
           <form onSubmit={handleSend}>
             <div className="settings-field">
               <label>How can we help?</label>
-              <textarea placeholder="Describe what you're running into..." className="settings-textarea" required />
+              <textarea placeholder="Describe the issue you're facing..." className="settings-textarea" required />
             </div>
             <div className="settings-actions mt-4">
               <button type="submit" disabled={sending || sent} className="settings-btn-primary">

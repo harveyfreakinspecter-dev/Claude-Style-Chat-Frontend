@@ -2,11 +2,8 @@ import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type R
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   ArrowUp,
-  Asterisk,
   Check,
   ChevronDown,
-  CircleDot,
-  Clock3,
   Copy,
   FileText,
   Folder,
@@ -70,83 +67,83 @@ const INTEGRATION_URLS = {
 };
 
 const models: Record<ModelKey, { name: string; detail: string }> = {
-  clarity: { name: 'Clarity', detail: 'Thoughtful & balanced' },
-  depth: { name: 'Depth', detail: 'Long-form reasoning' },
-  quick: { name: 'Quick', detail: 'Fast & direct' },
+  clarity: { name: 'Summary', detail: 'High-level overview' },
+  depth: { name: 'Deep Review', detail: 'Thorough legal analysis' },
+  quick: { name: 'Quick Find', detail: 'Fast fact extraction' },
 };
 
 const contexts: Record<ContextKey, { name: string; detail: string }> = {
-  focused: { name: 'Focused', detail: 'This conversation only' },
-  balanced: { name: 'Balanced', detail: 'Conversation + saved notes' },
-  open: { name: 'Open context', detail: 'Everything in your space' },
+  focused: { name: 'Focused', detail: 'This document only' },
+  balanced: { name: 'Matter Context', detail: 'Current case files' },
+  open: { name: 'Full Workspace', detail: 'All firm matters' },
 };
 
 const startingConversations: Conversation[] = [
   {
-    id: 'week',
-    title: 'A clearer week',
-    preview: 'The shape of a week that leaves room...',
+    id: 'smith-v-jones',
+    title: 'Smith v. Jones - Deposition',
+    preview: 'Summary of the key contradictions in...',
     date: 'Today',
     messages: [
       {
-        id: 'week-1',
+        id: 'svj-1',
         role: 'user',
-        content: 'I want to plan a clearer week without packing every hour. What should I think about first?',
+        content: 'I need to review the transcript from Dr. Smith\'s deposition. What are the key contradictions regarding the timeline of events on August 4th?',
         time: '9:41 AM',
       },
       {
-        id: 'week-2',
+        id: 'svj-2',
         role: 'assistant',
         content:
-          'Start with the shape of the week, not the list of tasks.\n\nChoose one thing you want the week to make possible. Then protect two or three stretches of unclaimed time around it. The useful constraint is not “how much can fit?” but “what deserves my best attention?”\n\nFrom there, give each day a small center of gravity: one meaningful move, one practical maintenance task, and enough space for the day to surprise you.',
+          'Based on the deposition transcript, there are three primary inconsistencies regarding August 4th:\n\n1. Morning Arrival: Dr. Smith initially stated he arrived at 8:00 AM, but later mentioned seeing the plaintiff "right as the clinic opened at 9:00 AM."\n2. The Phone Call: He claims he made the referral call before lunch, but the provided phone records show the call was placed at 2:15 PM.\n3. Documentation: Dr. Smith testified he signed off on the charts immediately, but the metadata indicates the files were modified two days later.\n\nWould you like me to pull the specific page and line numbers for these statements?',
         time: '9:42 AM',
       },
     ],
   },
   {
-    id: 'ambition',
-    title: 'The right amount of ambition',
-    preview: 'A note on building with patience...',
+    id: 'audio-evidence',
+    title: 'Audio evidence analysis',
+    preview: 'Key moments in the recorded call...',
     date: 'Today',
     messages: [
       {
-        id: 'ambition-1',
+        id: 'ae-1',
         role: 'user',
-        content: 'How do I tell the difference between patience and avoidance?',
+        content: 'Can you isolate the portion of the 911 call where the background noise changes?',
         time: '8:18 AM',
       },
       {
-        id: 'ambition-2',
+        id: 'ae-2',
         role: 'assistant',
-        content: 'Patience keeps you in contact with the work. Avoidance helps you feel temporarily free of it. Look for the smallest honest next step.',
+        content: 'I have analyzed the audio file. At timestamp 02:14, there is a distinct shift in background noise, transitioning from street traffic to what sounds like an enclosed space or vehicle interior. The caller\'s vocal proximity to the microphone also changes at this point.',
         time: '8:19 AM',
       },
     ],
   },
   {
-    id: 'reading',
-    title: 'Reading list for spring',
-    preview: 'Books that ask better questions...',
+    id: 'contract-review',
+    title: 'Vendor agreement review',
+    preview: 'Liability clauses in the MSA...',
     date: 'Yesterday',
     messages: [
       {
-        id: 'reading-1',
+        id: 'cr-1',
         role: 'user',
-        content: 'I want a reading list with more essays and fewer obligations.',
+        content: 'I need a breakdown of the indemnification and liability clauses in the new Master Services Agreement.',
         time: '4:05 PM',
       },
     ],
   },
   {
-    id: 'rhythm',
-    title: 'Notes on a new rhythm',
-    preview: 'What I am learning about mornings...',
+    id: 'discovery-request',
+    title: 'Opposing counsel request',
+    preview: 'Drafting responses to production...',
     date: 'Mar 18',
     messages: [
       {
-        id: 'rhythm-1',
+        id: 'dr-1',
         role: 'user',
-        content: 'Help me notice what is working in my morning routine.',
+        content: 'Help me draft objections to Request for Production #4, which asks for all internal communications over the last 5 years. It is overly broad.',
         time: '11:27 AM',
       },
     ],
@@ -154,7 +151,7 @@ const startingConversations: Conversation[] = [
 ];
 
 let globalConversations: Conversation[] = startingConversations;
-let globalActiveId = 'week';
+let globalActiveId = 'smith-v-jones';
 let globalUploadedFiles: UploadedFile[] = [];
 
 function formatTime(date = new Date()) {
@@ -176,7 +173,7 @@ function formatBytes(bytes: number) {
 function AssistantMark({ small = false }: { small?: boolean }) {
   return (
     <div className={small ? 'assistant-mark assistant-mark-small' : 'assistant-mark'} aria-hidden="true">
-      <Asterisk size={small ? 13 : 17} strokeWidth={1.7} />
+      <Search size={small ? 13 : 17} strokeWidth={2.5} />
     </div>
   );
 }
@@ -273,7 +270,7 @@ function Home() {
     const fresh: Conversation = {
       id: makeId('conversation'),
       title: 'Untitled conversation',
-      preview: 'A fresh page for your thoughts...',
+      preview: 'A fresh page for your matter...',
       date: 'Just now',
       messages: [],
     };
@@ -308,10 +305,10 @@ function Home() {
     replyTimerRef.current = setTimeout(() => {
       const reply =
         model === 'quick'
-          ? 'A useful place to begin: name what matters, then make the next step smaller than your resistance.'
+          ? 'I found 3 references to that clause. The most relevant is on page 14, section 2.1.'
           : model === 'depth'
-            ? 'Let’s stay with the question for a moment. The clearest next move is usually not a complete plan, but a small decision that changes what becomes possible after it. What would you be willing to make visible today?'
-            : 'Let’s make this lighter. Name the part that feels most alive or most stuck, and we can give it a little shape without needing to solve everything at once.';
+            ? 'Based on a thorough review of the provided files, there are several key liabilities to consider. First, the indemnification clause on page 14 places undue burden on our client. Second, the arbitration venue is not specified, which could lead to jurisdictional issues.'
+            : 'I can help with that. To give you the best analysis, would you like me to focus on the financial implications, or the general liability risks?';
       updateConversation(conversationId, (conversation) => ({
         ...conversation,
         preview: reply.slice(0, 48) + '...',
@@ -363,8 +360,7 @@ function Home() {
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between px-5 pb-7 pt-6">
             <button type="button" data-testid="button-brand-home" onClick={createConversation} className="brand-lockup">
-              <span className="brand-mark"><CircleDot size={17} strokeWidth={1.8} /></span>
-              <span>stillroom</span>
+              <img src="/discoveryez-logo.png" alt="DiscoveryEZ" />
             </button>
             <button
               type="button"
@@ -397,7 +393,7 @@ function Home() {
           <div className="px-5 pb-4 pt-7">
             <div className="search-field">
               <Search size={15} />
-              <input data-testid="input-search-conversations" aria-label="Search conversations" placeholder="Search your thinking" />
+              <input data-testid="input-search-conversations" aria-label="Search conversations" placeholder="Search your case files" />
               <span className="search-shortcut">⌘ K</span>
             </div>
           </div>
@@ -433,7 +429,7 @@ function Home() {
               <span className="avatar">AM</span>
               <span className="min-w-0 flex-1 text-left">
                 <span className="account-name">Alex Morgan</span>
-                <span className="account-plan">Personal space</span>
+                <span className="account-plan">Firm Workspace</span>
               </span>
               <MoreHorizontal size={16} />
             </button>
@@ -522,11 +518,11 @@ function Home() {
           {activeConversation.messages.length === 0 ? (
             <div className="empty-state message-enter">
               <div className="empty-orbit"><AssistantMark /></div>
-              <div className="eyebrow">A little room to think</div>
-              <h2>What are you carrying today?</h2>
-              <p>Start with a question, a half-formed idea, or something you want to make a little clearer.</p>
+              <div className="eyebrow">Discovery Workspace</div>
+              <h2>What are we reviewing today?</h2>
+              <p>Upload a legal document, deposition audio, or evidence file to begin analysis.</p>
               <div className="suggestion-row">
-                {['Help me find the first step', 'Make sense of this idea', 'Give me a gentler plan'].map((suggestion) => (
+                {['Summarize this deposition', 'Find timeline inconsistencies', 'Extract key contract clauses'].map((suggestion) => (
                   <button
                     type="button"
                     key={suggestion}
@@ -551,7 +547,7 @@ function Home() {
                   {message.role === 'assistant' ? <AssistantMark /> : <span className="user-mark">AM</span>}
                   <div className="min-w-0 flex-1">
                     <div className="message-meta">
-                      <span>{message.role === 'assistant' ? 'stillroom' : 'You'}</span>
+                      <span>{message.role === 'assistant' ? 'DiscoveryEZ' : 'You'}</span>
                       <span>{message.time}</span>
                     </div>
                     <div className="message-content">
@@ -564,7 +560,7 @@ function Home() {
                         <button type="button" data-testid={`button-copy-message-${message.id}`} onClick={() => handleCopy(message.content)} aria-label="Copy response">{copied ? <Check size={14} /> : <Copy size={14} />}</button>
                         <button type="button" data-testid={`button-like-message-${message.id}`} onClick={() => undefined} aria-label="Like response"><ThumbsUp size={14} /></button>
                         <button type="button" data-testid={`button-dislike-message-${message.id}`} onClick={() => undefined} aria-label="Dislike response"><ThumbsDown size={14} /></button>
-                        <button type="button" data-testid={`button-retry-message-${message.id}`} onClick={() => setDraft('Could you say that another way?')} aria-label="Ask for another response"><RotateCcw size={14} /></button>
+                        <button type="button" data-testid={`button-retry-message-${message.id}`} onClick={() => setDraft('Could you clarify the legal reasoning?')} aria-label="Ask for another response"><RotateCcw size={14} /></button>
                       </div>
                     )}
                   </div>
@@ -599,7 +595,7 @@ function Home() {
               onKeyDown={handleComposerKeyDown}
               data-testid="input-message-composer"
               aria-label="Message"
-              placeholder="Write what is on your mind..."
+              placeholder="Ask a question about your evidence..."
               rows={1}
             />
             <div className="composer-footer">
@@ -641,7 +637,7 @@ function Home() {
               </div>
             </div>
           </form>
-          <div className="composer-disclaimer"><span className="status-dot" /> Your conversations stay in this space</div>
+          <div className="composer-disclaimer"><span className="status-dot" /> Your case data is encrypted and secure</div>
         </div>
 
         {isFilesOpen && (
