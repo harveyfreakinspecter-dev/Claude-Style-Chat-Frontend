@@ -634,7 +634,7 @@ function Home() {
         </div>
       </aside>
 
-      <section className={`relative flex min-w-0 flex-1 flex-col ${activeConversation.messages.length === 0 ? 'conversation-empty' : ''}`}>
+      <section className={`relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${activeConversation.messages.length === 0 ? 'conversation-empty' : ''}`}>
         <header className="conversation-header">
           <div className="flex min-w-0 items-center gap-3">
             <button
