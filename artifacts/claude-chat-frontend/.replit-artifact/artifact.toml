@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Claude-Style Chat Frontend"
+description = "A polished conversational AI frontend inspired by modern assistant interfaces, with a calm workspace, conversation history, model controls, and an interactive message composer."
+version = "1.0.0"
+id = "artifacts/claude-chat-frontend"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23779
+
+[services.development]
+run = "pnpm --filter @workspace/claude-chat-frontend run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/claude-chat-frontend", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/claude-chat-frontend/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23779"
+BASE_PATH = "/"
