@@ -187,6 +187,14 @@ function AssistantMark({ small = false }: { small?: boolean }) {
   );
 }
 
+function DiscoveryEZIcon() {
+  return (
+    <span className="discoveryez-icon" aria-hidden="true">
+      <img src="/discoveryez-logo.png" alt="" />
+    </span>
+  );
+}
+
 function QuickPrompts({ onSelect, className = '' }: { onSelect: (prompt: string) => void; className?: string }) {
   return (
     <div className={`suggestion-row ${className}`}>
@@ -606,7 +614,7 @@ function Home() {
         <div className="scroll-soft flex min-h-0 flex-1 flex-col overflow-y-auto">
           {activeConversation.messages.length === 0 ? (
             <div className="empty-state message-enter">
-              <div className="empty-orbit"><AssistantMark /></div>
+              <div className="empty-orbit"><DiscoveryEZIcon /></div>
               <div className="eyebrow">Discovery Workspace</div>
               <h2>What are we reviewing today?</h2>
               <p>Upload a legal document, deposition audio, or evidence file to begin analysis.</p>
