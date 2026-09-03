@@ -653,8 +653,8 @@ function Home() {
             <div className="empty-state message-enter">
               <div className="empty-orbit"><DiscoveryEZIcon /></div>
               <div className="eyebrow">Discovery Workspace</div>
-              <h2>What are we reviewing today?</h2>
-              <p>Upload a legal document, deposition audio, or evidence file to begin analysis.</p>
+              <h2>How can I help?</h2>
+              <p>Add a file or ask a question to begin.</p>
               {composer}
               <QuickPrompts onSelect={selectPrompt} />
             </div>
