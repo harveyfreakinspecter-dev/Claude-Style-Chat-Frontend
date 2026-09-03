@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type DragEvent, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   ArrowUp,
@@ -259,6 +259,7 @@ function Home() {
   const [context, setContext] = useState<ContextKey>('focused');
   const [draft, setDraft] = useState('');
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
   const [pending, setPending] = useState(false);
   const [copied, setCopied] = useState(false);
   
@@ -271,6 +272,7 @@ function Home() {
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const messageScrollRef = useRef<HTMLDivElement>(null);
   const replyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dragDepthRef = useRef(0);
 
   const activeConversation = conversations.find((conversation) => conversation.id === activeId) ?? conversations[0];
 
@@ -401,6 +403,51 @@ function Home() {
     }
   };
 
+  const registerUploadedFile = (file: File) => {
+    setAttachedFile(file);
+    const newFile: UploadedFile = {
+      id: makeId('file'),
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      uploadedAt: formatTime(),
+    };
+    setUploadedFiles((prev) => [newFile, ...prev]);
+  };
+
+  const handleDragEnter = (event: DragEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!event.dataTransfer.types.includes('Files')) return;
+    dragDepthRef.current += 1;
+    setIsDragActive(true);
+  };
+
+  const handleDragOver = (event: DragEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!event.dataTransfer.types.includes('Files')) return;
+    event.dataTransfer.dropEffect = 'copy';
+    setIsDragActive(true);
+  };
+
+  const handleDragLeave = (event: DragEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!event.dataTransfer.types.includes('Files')) return;
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setIsDragActive(false);
+  };
+
+  const handleDrop = (event: DragEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    dragDepthRef.current = 0;
+    setIsDragActive(false);
+    const file = event.dataTransfer.files?.[0];
+    if (file) registerUploadedFile(file);
+  };
+
   const removeFile = (id: string) => {
     setUploadedFiles(prev => prev.filter(f => f.id !== id));
   };
@@ -424,7 +471,20 @@ function Home() {
           <button type="button" data-testid="button-remove-attachment" onClick={() => setAttachedFile(null)} aria-label="Remove attachment"><X size={14} /></button>
         </div>
       )}
-      <form onSubmit={handleSend} className="composer-glow composer">
+      <form
+        onSubmit={handleSend}
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`composer-glow composer ${isDragActive ? 'composer-drag-active' : ''}`}
+      >
+        {isDragActive && (
+          <div className="composer-dropzone" aria-hidden="true">
+            <Paperclip size={18} />
+            <span>Drop a file to attach</span>
+          </div>
+        )}
         <textarea
           value={draft}
           ref={composerRef}
@@ -444,17 +504,7 @@ function Home() {
               className="hidden"
               onChange={(event) => {
                 const file = event.target.files?.[0];
-                if (file) {
-                  setAttachedFile(file);
-                  const newFile = {
-                    id: makeId('file'),
-                    name: file.name,
-                    size: file.size,
-                    type: file.type,
-                    uploadedAt: formatTime()
-                  };
-                  setUploadedFiles(prev => [newFile, ...prev]);
-                }
+                if (file) registerUploadedFile(file);
                 if (event.target) event.target.value = '';
               }}
             />

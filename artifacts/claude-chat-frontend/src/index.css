@@ -714,7 +714,9 @@
 .composer-wrap { width: min(100%, 760px); margin: 0 auto; padding: 0 clamp(18px, 4vw, 52px) 17px; }
 .composer-dock { position: relative; z-index: 5; padding-top: 8px; background: linear-gradient(to bottom, hsl(var(--background) / 0), hsl(var(--background) / .92) 24%, hsl(var(--background)) 52%); }
 .composer-wrap-settled { padding-top: 0; }
-.composer { overflow: hidden; border: 1px solid hsl(var(--input)); border-radius: 14px; background: hsl(var(--card) / .86); box-shadow: 0 8px 24px -18px hsl(var(--foreground) / .18); transition: border-color .2s ease, box-shadow .2s ease; }
+.composer { position: relative; overflow: hidden; border: 1px solid hsl(var(--input)); border-radius: 14px; background: hsl(var(--card) / .86); box-shadow: 0 8px 24px -18px hsl(var(--foreground) / .18); transition: border-color .2s ease, box-shadow .2s ease; }
+.composer-drag-active { border-color: hsl(var(--primary) / .55); box-shadow: 0 0 0 3px hsl(var(--primary) / .08), 0 12px 30px -18px hsl(var(--primary) / .28); }
+.composer-dropzone { position: absolute; inset: 7px; z-index: 2; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px dashed hsl(var(--primary) / .55); border-radius: 9px; color: hsl(var(--primary)); background: hsl(var(--background) / .92); font-size: 12px; font-weight: 600; pointer-events: none; }
 .composer textarea { display: block; width: 100%; min-height: 58px; max-height: 180px; resize: vertical; padding: 16px 16px 8px; border: 0; outline: 0; color: hsl(var(--foreground)); background: transparent; font-size: 13px; line-height: 1.55; }
 .composer textarea::placeholder { color: hsl(var(--muted-foreground)); }
 .composer-footer { display: flex; align-items: center; justify-content: space-between; padding: 7px 9px 9px 12px; }
