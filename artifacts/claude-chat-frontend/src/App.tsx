@@ -80,6 +80,13 @@ const contexts: Record<ContextKey, { name: string; detail: string }> = {
 
 const startingConversations: Conversation[] = [
   {
+    id: 'new',
+    title: 'New discovery review',
+    preview: 'Upload evidence to begin...',
+    date: 'Today',
+    messages: [],
+  },
+  {
     id: 'smith-v-jones',
     title: 'Smith v. Jones - Deposition',
     preview: 'Summary of the key contradictions in...',
@@ -151,7 +158,7 @@ const startingConversations: Conversation[] = [
 ];
 
 let globalConversations: Conversation[] = startingConversations;
-let globalActiveId = 'smith-v-jones';
+let globalActiveId = 'new';
 let globalUploadedFiles: UploadedFile[] = [];
 
 function formatTime(date = new Date()) {
