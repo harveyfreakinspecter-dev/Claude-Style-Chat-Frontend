@@ -9,6 +9,9 @@ import {
   Clock3,
   Copy,
   FileText,
+  Folder,
+  LifeBuoy,
+  CreditCard,
   Menu,
   MessageCircle,
   MoreHorizontal,
@@ -24,11 +27,13 @@ import {
   ThumbsUp,
   X,
 } from 'lucide-react';
+import { SiGoogledrive, SiDropbox } from 'react-icons/si';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
-import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
+import { Route, Switch, useLocation, Router as WouterRouter, Link } from 'wouter';
+import { SettingsAccount, SettingsBilling, SettingsSupport } from '@/pages/settings';
 
 type Role = 'user' | 'assistant';
 type ModelKey = 'clarity' | 'depth' | 'quick';
@@ -49,7 +54,20 @@ type Conversation = {
   messages: Message[];
 };
 
+type UploadedFile = {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  uploadedAt: string;
+};
+
 const queryClient = new QueryClient();
+
+const INTEGRATION_URLS = {
+  googleDrive: '/api/integrations/google-drive/connect',
+  dropbox: '/api/integrations/dropbox/connect',
+};
 
 const models: Record<ModelKey, { name: string; detail: string }> = {
   clarity: { name: 'Clarity', detail: 'Thoughtful & balanced' },
@@ -135,12 +153,24 @@ const startingConversations: Conversation[] = [
   },
 ];
 
+let globalConversations: Conversation[] = startingConversations;
+let globalActiveId = 'week';
+let globalUploadedFiles: UploadedFile[] = [];
+
 function formatTime(date = new Date()) {
   return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
 function makeId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function formatBytes(bytes: number) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
 function AssistantMark({ small = false }: { small?: boolean }) {
@@ -195,12 +225,16 @@ function Home() {
   const [contextOpen, setContextOpen] = useState(false);
   const [model, setModel] = useState<ModelKey>('clarity');
   const [context, setContext] = useState<ContextKey>('focused');
-  const [activeId, setActiveId] = useState('week');
   const [draft, setDraft] = useState('');
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [pending, setPending] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [conversations, setConversations] = useState(startingConversations);
+  
+  const [conversations, setConversations] = useState(globalConversations);
+  const [activeId, setActiveId] = useState(globalActiveId);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>(globalUploadedFiles);
+  const [isFilesOpen, setIsFilesOpen] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -211,6 +245,18 @@ function Home() {
       if (replyTimerRef.current) clearTimeout(replyTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    globalConversations = conversations;
+  }, [conversations]);
+
+  useEffect(() => {
+    globalActiveId = activeId;
+  }, [activeId]);
+
+  useEffect(() => {
+    globalUploadedFiles = uploadedFiles;
+  }, [uploadedFiles]);
 
   const updateConversation = (id: string, update: (conversation: Conversation) => Conversation) => {
     setConversations((items) => items.map((conversation) => (conversation.id === id ? update(conversation) : conversation)));
@@ -290,6 +336,10 @@ function Home() {
     } catch {
       setCopied(false);
     }
+  };
+
+  const removeFile = (id: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== id));
   };
 
   const grouped = {
@@ -378,7 +428,7 @@ function Home() {
             ))}
           </nav>
 
-          <div className="border-t border-[hsl(var(--sidebar-border))] p-3">
+          <div className="border-t border-[hsl(var(--sidebar-border))] p-3 relative">
             <button type="button" data-testid="button-account" onClick={() => setProfileOpen((value) => !value)} className="account-button">
               <span className="avatar">AM</span>
               <span className="min-w-0 flex-1 text-left">
@@ -388,9 +438,16 @@ function Home() {
               <MoreHorizontal size={16} />
             </button>
             {profileOpen && (
-              <div className="profile-popover">
-                <button type="button" data-testid="button-settings" onClick={() => setProfileOpen(false)}><Settings2 size={15} /> Settings</button>
-                <button type="button" data-testid="button-help" onClick={() => setProfileOpen(false)}><Clock3 size={15} /> Your activity</button>
+              <div className="profile-popover absolute bottom-[calc(100%-8px)] left-3 right-3 z-30">
+                <Link href="/settings/account" data-testid="link-settings-account" onClick={() => setProfileOpen(false)}>
+                  <Settings2 size={15} /> Account Settings
+                </Link>
+                <Link href="/settings/billing" data-testid="link-settings-billing" onClick={() => setProfileOpen(false)}>
+                  <CreditCard size={15} /> Billing & usage
+                </Link>
+                <Link href="/settings/support" data-testid="link-settings-support" onClick={() => setProfileOpen(false)}>
+                  <LifeBuoy size={15} /> Support
+                </Link>
               </div>
             )}
           </div>
@@ -552,10 +609,27 @@ function Home() {
                   type="file"
                   data-testid="input-attachment"
                   className="hidden"
-                  onChange={(event) => setAttachedFile(event.target.files?.[0] ?? null)}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) {
+                      setAttachedFile(file);
+                      const newFile = {
+                        id: makeId('file'),
+                        name: file.name,
+                        size: file.size,
+                        type: file.type,
+                        uploadedAt: formatTime()
+                      };
+                      setUploadedFiles(prev => [newFile, ...prev]);
+                    }
+                    if (event.target) event.target.value = '';
+                  }}
                 />
                 <button type="button" data-testid="button-attach-file" onClick={() => fileInputRef.current?.click()} className="composer-tool" aria-label="Attach a file">
                   <Paperclip size={17} />
+                </button>
+                <button type="button" data-testid="button-view-files" onClick={() => setIsFilesOpen(true)} className="composer-tool" aria-label="View uploaded files">
+                  <Folder size={17} />
                 </button>
                 <span className="composer-hint hidden sm:block">Shift + Enter for a new line</span>
               </div>
@@ -569,9 +643,70 @@ function Home() {
           </form>
           <div className="composer-disclaimer"><span className="status-dot" /> Your conversations stay in this space</div>
         </div>
+
+        {isFilesOpen && (
+          <div className="modal-overlay" onClick={() => setIsFilesOpen(false)}>
+            <div className="files-modal" onClick={e => e.stopPropagation()}>
+              <header className="files-modal-header">
+                <h3>Your files</h3>
+                <button type="button" onClick={() => setIsFilesOpen(false)} className="icon-button subtle"><X size={18}/></button>
+              </header>
+              
+              <div className="files-modal-content scroll-soft">
+                {uploadedFiles.length === 0 ? (
+                  <div className="files-empty">
+                    <div className="empty-icon"><Folder size={24} /></div>
+                    <h4>No files yet</h4>
+                    <p>Files you upload in your conversations will appear here for easy access.</p>
+                  </div>
+                ) : (
+                  <ul className="file-list">
+                    {uploadedFiles.map(f => (
+                      <li key={f.id} className="file-list-item">
+                        <div className="file-icon"><FileText size={16} strokeWidth={1.5} /></div>
+                        <div className="file-details">
+                          <span className="file-name">{f.name}</span>
+                          <span className="file-meta">{formatBytes(f.size)} • {f.uploadedAt}</span>
+                        </div>
+                        <button type="button" onClick={() => removeFile(f.id)} className="icon-button subtle" aria-label="Remove file"><X size={14}/></button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                
+                <div className="files-integrations">
+                  <div className="integration-label">Connect storage</div>
+                  <div className="integration-buttons">
+                    <a href={INTEGRATION_URLS.googleDrive} className="integration-btn">
+                      <SiGoogledrive size={15} />
+                      <span>Google Drive</span>
+                    </a>
+                    <a href={INTEGRATION_URLS.dropbox} className="integration-btn">
+                      <SiDropbox size={15} />
+                      <span>Dropbox</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+              
+              <footer className="files-modal-footer">
+                <button type="button" onClick={() => { setIsFilesOpen(false); fileInputRef.current?.click(); }} className="attach-more-btn">
+                  <Plus size={15} /> Attach another file
+                </button>
+              </footer>
+            </div>
+          </div>
+        )}
+
       </section>
     </main>
   );
+}
+
+function RedirectTo({ to }: { to: string }) {
+  const [, setLocation] = useLocation();
+  useEffect(() => { setLocation(to); }, [to, setLocation]);
+  return null;
 }
 
 function Router() {
@@ -579,6 +714,10 @@ function Router() {
     <RoutedErrorBoundary>
       <Switch>
         <Route path="/" component={Home} />
+        <Route path="/settings/account" component={SettingsAccount} />
+        <Route path="/settings/billing" component={SettingsBilling} />
+        <Route path="/settings/support" component={SettingsSupport} />
+        <Route path="/settings" component={() => <RedirectTo to="/settings/account" />} />
         <Route component={NotFound} />
       </Switch>
     </RoutedErrorBoundary>
