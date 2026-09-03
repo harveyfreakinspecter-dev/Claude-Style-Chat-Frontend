@@ -268,6 +268,8 @@ function Home() {
   const [isFilesOpen, setIsFilesOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+  const messageScrollRef = useRef<HTMLDivElement>(null);
   const replyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeConversation = conversations.find((conversation) => conversation.id === activeId) ?? conversations[0];
@@ -277,6 +279,22 @@ function Home() {
       if (replyTimerRef.current) clearTimeout(replyTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const scrollArea = messageScrollRef.current;
+      if (scrollArea && activeConversation.messages.length > 0) {
+        scrollArea.scrollTo({ top: scrollArea.scrollHeight, behavior: 'smooth' });
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeId, activeConversation.messages.length, pending]);
+
+  useEffect(() => {
+    if (activeConversation.messages.length > 0) return undefined;
+    const frame = window.requestAnimationFrame(() => composerRef.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeId, activeConversation.messages.length]);
 
   useEffect(() => {
     globalConversations = conversations;
@@ -294,14 +312,25 @@ function Home() {
     setConversations((items) => items.map((conversation) => (conversation.id === id ? update(conversation) : conversation)));
   };
 
-  const chooseConversation = (id: string) => {
-    setActiveId(id);
+  const cancelPendingReply = () => {
+    if (replyTimerRef.current) {
+      clearTimeout(replyTimerRef.current);
+      replyTimerRef.current = null;
+    }
     setPending(false);
+  };
+
+  const chooseConversation = (id: string) => {
+    cancelPendingReply();
+    setActiveId(id);
     setDraft('');
+    setAttachedFile(null);
+    setCopied(false);
     if (window.innerWidth < 768) setRailOpen(false);
   };
 
   const createConversation = () => {
+    cancelPendingReply();
     const fresh: Conversation = {
       id: makeId('conversation'),
       title: 'Untitled conversation',
@@ -312,7 +341,8 @@ function Home() {
     setConversations((items) => [fresh, ...items]);
     setActiveId(fresh.id);
     setDraft('');
-    setPending(false);
+    setAttachedFile(null);
+    setCopied(false);
     if (window.innerWidth < 768) setRailOpen(false);
   };
 
@@ -349,6 +379,7 @@ function Home() {
         preview: reply.slice(0, 48) + '...',
         messages: [...conversation.messages, { id: makeId('assistant'), role: 'assistant', content: reply, time: formatTime() }],
       }));
+      replyTimerRef.current = null;
       setPending(false);
     }, 1250);
   };
@@ -379,8 +410,13 @@ function Home() {
     Earlier: conversations.filter((item) => item.date !== 'Today' && item.date !== 'Just now'),
   };
 
+  const selectPrompt = (prompt: string) => {
+    setDraft(prompt);
+    window.requestAnimationFrame(() => composerRef.current?.focus());
+  };
+
   const composer = (
-    <div className="composer-wrap">
+    <div className={`composer-wrap ${activeConversation.messages.length > 0 ? 'composer-wrap-settled' : 'composer-wrap-initial'}`}>
       {attachedFile && (
         <div className="attachment-preview message-enter">
           <FileText size={15} />
@@ -391,6 +427,7 @@ function Home() {
       <form onSubmit={handleSend} className="composer-glow composer">
         <textarea
           value={draft}
+          ref={composerRef}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={handleComposerKeyDown}
           data-testid="input-message-composer"
@@ -611,7 +648,7 @@ function Home() {
           </div>
         </header>
 
-        <div className="scroll-soft flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <div ref={messageScrollRef} className="scroll-soft flex min-h-0 flex-1 flex-col overflow-y-auto">
           {activeConversation.messages.length === 0 ? (
             <div className="empty-state message-enter">
               <div className="empty-orbit"><DiscoveryEZIcon /></div>
@@ -619,7 +656,7 @@ function Home() {
               <h2>What are we reviewing today?</h2>
               <p>Upload a legal document, deposition audio, or evidence file to begin analysis.</p>
               {composer}
-              <QuickPrompts onSelect={setDraft} />
+              <QuickPrompts onSelect={selectPrompt} />
             </div>
           ) : (
             <div className="message-column">
@@ -666,8 +703,12 @@ function Home() {
           )}
         </div>
 
-        {activeConversation.messages.length > 0 && <QuickPrompts onSelect={setDraft} className="post-message-prompts" />}
-        {activeConversation.messages.length > 0 && composer}
+        {activeConversation.messages.length > 0 && (
+          <div className="composer-dock">
+            <QuickPrompts onSelect={selectPrompt} className="post-message-prompts" />
+            {composer}
+          </div>
+        )}
 
         {isFilesOpen && (
           <div className="modal-overlay" onClick={() => setIsFilesOpen(false)}>
