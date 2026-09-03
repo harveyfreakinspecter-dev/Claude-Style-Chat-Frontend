@@ -693,6 +693,7 @@
 .thinking-label { margin-left: 8px; font-family: var(--font-mono); font-size: 9px; letter-spacing: .04em; }
 
 .empty-state { display: flex; align-items: center; justify-content: center; flex-direction: column; width: 100%; min-height: 100%; max-width: 560px; margin: auto; padding: 30px 24px; text-align: center; }
+.conversation-empty .empty-state { position: relative; top: clamp(-150px, -14vh, -90px); }
 .empty-orbit { display: grid; place-items: center; width: 76px; height: 76px; margin-bottom: 28px; border: 1px solid hsl(var(--primary) / .15); border-radius: 26px; background: hsl(var(--primary) / .05); transform: rotate(-7deg); }
 .empty-orbit .assistant-mark { transform: rotate(7deg); }
 .empty-state h2 { margin-top: 15px; color: hsl(var(--foreground)); font-family: var(--font-serif); font-size: clamp(30px, 4vw, 42px); font-weight: 500; letter-spacing: -.045em; }
@@ -722,6 +723,7 @@
 .attachment-preview button:hover { color: hsl(var(--foreground)); }
 
 @media (max-width: 767px) {
+  .conversation-empty .empty-state { top: -8vh; }
   .conversation-rail { position: fixed; inset: 0 auto 0 0; z-index: 40; width: min(87vw, 310px); flex-basis: min(87vw, 310px); box-shadow: 18px 0 38px hsl(225 22% 18% / .16); transform: translateX(0); }
   .conversation-rail-closed { width: min(87vw, 310px); flex-basis: min(87vw, 310px); transform: translateX(-105%); }
   .conversation-header { min-height: 68px; padding: 0 16px; }
