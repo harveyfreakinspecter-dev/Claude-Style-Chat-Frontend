@@ -78,6 +78,8 @@ const contexts: Record<ContextKey, { name: string; detail: string }> = {
   open: { name: 'Full Workspace', detail: 'All firm matters' },
 };
 
+const quickPrompts = ['Summarize this deposition', 'Find timeline inconsistencies', 'Extract key contract clauses'];
+
 const startingConversations: Conversation[] = [
   {
     id: 'new',
@@ -181,6 +183,24 @@ function AssistantMark({ small = false }: { small?: boolean }) {
   return (
     <div className={small ? 'assistant-mark assistant-mark-small' : 'assistant-mark'} aria-hidden="true">
       <Search size={small ? 13 : 17} strokeWidth={2.5} />
+    </div>
+  );
+}
+
+function QuickPrompts({ onSelect, className = '' }: { onSelect: (prompt: string) => void; className?: string }) {
+  return (
+    <div className={`suggestion-row ${className}`}>
+      {quickPrompts.map((suggestion) => (
+        <button
+          type="button"
+          key={suggestion}
+          data-testid={`button-suggestion-${suggestion.toLowerCase().replaceAll(' ', '-')}`}
+          onClick={() => onSelect(suggestion)}
+          className="suggestion-chip"
+        >
+          {suggestion}
+        </button>
+      ))}
     </div>
   );
 }
@@ -590,20 +610,8 @@ function Home() {
               <div className="eyebrow">Discovery Workspace</div>
               <h2>What are we reviewing today?</h2>
               <p>Upload a legal document, deposition audio, or evidence file to begin analysis.</p>
-              <div className="suggestion-row">
-                {['Summarize this deposition', 'Find timeline inconsistencies', 'Extract key contract clauses'].map((suggestion) => (
-                  <button
-                    type="button"
-                    key={suggestion}
-                    data-testid={`button-suggestion-${suggestion.toLowerCase().replaceAll(' ', '-')}`}
-                    onClick={() => { setDraft(suggestion); }}
-                    className="suggestion-chip"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-                {composer}
+              {composer}
+              <QuickPrompts onSelect={setDraft} />
             </div>
           ) : (
             <div className="message-column">
@@ -650,6 +658,7 @@ function Home() {
           )}
         </div>
 
+        {activeConversation.messages.length > 0 && <QuickPrompts onSelect={setDraft} className="post-message-prompts" />}
         {activeConversation.messages.length > 0 && composer}
 
         {isFilesOpen && (
