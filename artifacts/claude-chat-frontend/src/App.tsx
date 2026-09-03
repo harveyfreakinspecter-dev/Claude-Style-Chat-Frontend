@@ -351,6 +351,68 @@ function Home() {
     Earlier: conversations.filter((item) => item.date !== 'Today' && item.date !== 'Just now'),
   };
 
+  const composer = (
+    <div className="composer-wrap">
+      {attachedFile && (
+        <div className="attachment-preview message-enter">
+          <FileText size={15} />
+          <span>{attachedFile.name}</span>
+          <button type="button" data-testid="button-remove-attachment" onClick={() => setAttachedFile(null)} aria-label="Remove attachment"><X size={14} /></button>
+        </div>
+      )}
+      <form onSubmit={handleSend} className="composer-glow composer">
+        <textarea
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={handleComposerKeyDown}
+          data-testid="input-message-composer"
+          aria-label="Message"
+          placeholder="Ask a question about your evidence..."
+          rows={1}
+        />
+        <div className="composer-footer">
+          <div className="flex items-center gap-1">
+            <input
+              ref={fileInputRef}
+              type="file"
+              data-testid="input-attachment"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) {
+                  setAttachedFile(file);
+                  const newFile = {
+                    id: makeId('file'),
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    uploadedAt: formatTime()
+                  };
+                  setUploadedFiles(prev => [newFile, ...prev]);
+                }
+                if (event.target) event.target.value = '';
+              }}
+            />
+            <button type="button" data-testid="button-attach-file" onClick={() => fileInputRef.current?.click()} className="composer-tool" aria-label="Attach a file">
+              <Paperclip size={17} />
+            </button>
+            <button type="button" data-testid="button-view-files" onClick={() => setIsFilesOpen(true)} className="composer-tool" aria-label="View uploaded files">
+              <Folder size={17} />
+            </button>
+            <span className="composer-hint hidden sm:block">Shift + Enter for a new line</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="context-caption hidden lg:inline">{contexts[context].detail}</span>
+            <button type="submit" data-testid="button-send-message" disabled={(!draft.trim() && !attachedFile) || pending} className="send-button" aria-label="Send message">
+              <ArrowUp size={17} strokeWidth={2.2} />
+            </button>
+          </div>
+        </div>
+      </form>
+      <div className="composer-disclaimer"><span className="status-dot" /> Your case data is encrypted and secure</div>
+    </div>
+  );
+
   return (
     <main className="chat-shell noise-layer flex min-h-[100dvh] w-full">
       {railOpen && (
@@ -541,6 +603,7 @@ function Home() {
                   </button>
                 ))}
               </div>
+                {composer}
             </div>
           ) : (
             <div className="message-column">
@@ -587,65 +650,7 @@ function Home() {
           )}
         </div>
 
-        <div className="composer-wrap">
-          {attachedFile && (
-            <div className="attachment-preview message-enter">
-              <FileText size={15} />
-              <span>{attachedFile.name}</span>
-              <button type="button" data-testid="button-remove-attachment" onClick={() => setAttachedFile(null)} aria-label="Remove attachment"><X size={14} /></button>
-            </div>
-          )}
-          <form onSubmit={handleSend} className="composer-glow composer">
-            <textarea
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={handleComposerKeyDown}
-              data-testid="input-message-composer"
-              aria-label="Message"
-              placeholder="Ask a question about your evidence..."
-              rows={1}
-            />
-            <div className="composer-footer">
-              <div className="flex items-center gap-1">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  data-testid="input-attachment"
-                  className="hidden"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (file) {
-                      setAttachedFile(file);
-                      const newFile = {
-                        id: makeId('file'),
-                        name: file.name,
-                        size: file.size,
-                        type: file.type,
-                        uploadedAt: formatTime()
-                      };
-                      setUploadedFiles(prev => [newFile, ...prev]);
-                    }
-                    if (event.target) event.target.value = '';
-                  }}
-                />
-                <button type="button" data-testid="button-attach-file" onClick={() => fileInputRef.current?.click()} className="composer-tool" aria-label="Attach a file">
-                  <Paperclip size={17} />
-                </button>
-                <button type="button" data-testid="button-view-files" onClick={() => setIsFilesOpen(true)} className="composer-tool" aria-label="View uploaded files">
-                  <Folder size={17} />
-                </button>
-                <span className="composer-hint hidden sm:block">Shift + Enter for a new line</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="context-caption hidden lg:inline">{contexts[context].detail}</span>
-                <button type="submit" data-testid="button-send-message" disabled={(!draft.trim() && !attachedFile) || pending} className="send-button" aria-label="Send message">
-                  <ArrowUp size={17} strokeWidth={2.2} />
-                </button>
-              </div>
-            </div>
-          </form>
-          <div className="composer-disclaimer"><span className="status-dot" /> Your case data is encrypted and secure</div>
-        </div>
+        {activeConversation.messages.length > 0 && composer}
 
         {isFilesOpen && (
           <div className="modal-overlay" onClick={() => setIsFilesOpen(false)}>
