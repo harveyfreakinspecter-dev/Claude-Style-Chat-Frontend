@@ -698,7 +698,7 @@
 .thinking-dot { display: block; width: 5px; height: 5px; border-radius: 50%; background: hsl(var(--accent)); }
 .thinking-label { margin-left: 8px; font-family: var(--font-mono); font-size: 9px; letter-spacing: .04em; }
 
-.empty-state { display: flex; align-items: center; justify-content: center; flex-direction: column; width: 100%; min-height: 100%; max-width: 560px; margin: auto; padding: 30px 24px; text-align: center; }
+.empty-state { display: flex; align-items: center; justify-content: center; flex-direction: column; width: 100%; min-height: 100%; max-width: 760px; margin: auto; padding: 30px 24px; text-align: center; }
 .conversation-empty .empty-state { position: relative; top: clamp(-150px, -14vh, -90px); }
 .empty-orbit { display: grid; place-items: center; width: 54px; height: 54px; margin-bottom: 22px; border: 1px solid hsl(var(--primary) / .15); border-radius: 18px; background: hsl(var(--primary) / .05); transform: rotate(-7deg); }
 .discoveryez-icon { position: relative; display: block; width: 28px; height: 28px; overflow: hidden; border-radius: 7px; background: hsl(var(--card)); transform: rotate(7deg); }
