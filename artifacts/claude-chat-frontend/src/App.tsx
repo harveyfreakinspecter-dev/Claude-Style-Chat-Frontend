@@ -61,6 +61,11 @@ type UploadedFile = {
 
 const queryClient = new QueryClient();
 
+// In dev this is empty and Vite's proxy forwards /api to the local api-server.
+// In production (Vercel), set VITE_API_BASE_URL to the api-server's public URL
+// since the static frontend has no server of its own to proxy through.
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+
 const INTEGRATION_URLS = {
   googleDrive: '/api/integrations/google-drive/connect',
   dropbox: '/api/integrations/dropbox/connect',
@@ -359,7 +364,7 @@ function Home() {
     setAttachedFile(null);
     setPending(true);
 
-    fetch(`/api/chat/${encodeURIComponent(conversationId)}`, {
+    fetch(`${API_BASE_URL}/api/chat/${encodeURIComponent(conversationId)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: `${messageText}${attachmentText}`, thinking_mode: model === 'depth' }),

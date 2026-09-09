@@ -25,7 +25,10 @@ app.use(
     },
   }),
 );
-app.use(cors());
+// ALLOWED_ORIGIN restricts CORS to the deployed frontend (e.g. Vercel URL);
+// unset it locally to allow any origin during dev.
+const allowedOrigin = process.env.ALLOWED_ORIGIN;
+app.use(cors(allowedOrigin ? { origin: allowedOrigin } : undefined));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
