@@ -61,10 +61,11 @@ type UploadedFile = {
 
 const queryClient = new QueryClient();
 
-// In dev this is empty and Vite's proxy forwards /api to the local api-server.
-// In production (Vercel), set VITE_API_BASE_URL to the api-server's public URL
-// since the static frontend has no server of its own to proxy through.
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+// Talks to the Hetzner-hosted Qwen chatbot API directly (no proxy) — fine
+// while this is a test key; move behind a server-side proxy before this
+// carries a production credential, since it ships in the client bundle.
+const CHATBOT_API_URL = (import.meta.env.VITE_CHATBOT_API_URL ?? 'https://chatbot.discoveryez-test.online').replace(/\/$/, '');
+const CHATBOT_API_KEY = import.meta.env.VITE_CHATBOT_API_KEY ?? '';
 
 const INTEGRATION_URLS = {
   googleDrive: '/api/integrations/google-drive/connect',
@@ -364,9 +365,9 @@ function Home() {
     setAttachedFile(null);
     setPending(true);
 
-    fetch(`${API_BASE_URL}/api/chat/${encodeURIComponent(conversationId)}`, {
+    fetch(`${CHATBOT_API_URL}/chat/${encodeURIComponent(conversationId)}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': CHATBOT_API_KEY },
       body: JSON.stringify({ message: `${messageText}${attachmentText}`, thinking_mode: model === 'depth' }),
     })
       .then(async (response) => {
