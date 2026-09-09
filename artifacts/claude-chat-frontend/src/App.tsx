@@ -271,16 +271,9 @@ function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const messageScrollRef = useRef<HTMLDivElement>(null);
-  const replyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragDepthRef = useRef(0);
 
   const activeConversation = conversations.find((conversation) => conversation.id === activeId) ?? conversations[0];
-
-  useEffect(() => {
-    return () => {
-      if (replyTimerRef.current) clearTimeout(replyTimerRef.current);
-    };
-  }, []);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -315,10 +308,6 @@ function Home() {
   };
 
   const cancelPendingReply = () => {
-    if (replyTimerRef.current) {
-      clearTimeout(replyTimerRef.current);
-      replyTimerRef.current = null;
-    }
     setPending(false);
   };
 
@@ -369,21 +358,41 @@ function Home() {
     setDraft('');
     setAttachedFile(null);
     setPending(true);
-    replyTimerRef.current = setTimeout(() => {
-      const reply =
-        model === 'quick'
-          ? 'I found 3 references to that clause. The most relevant is on page 14, section 2.1.'
-          : model === 'depth'
-            ? 'Based on a thorough review of the provided files, there are several key liabilities to consider. First, the indemnification clause on page 14 places undue burden on our client. Second, the arbitration venue is not specified, which could lead to jurisdictional issues.'
-            : 'I can help with that. To give you the best analysis, would you like me to focus on the financial implications, or the general liability risks?';
-      updateConversation(conversationId, (conversation) => ({
-        ...conversation,
-        preview: reply.slice(0, 48) + '...',
-        messages: [...conversation.messages, { id: makeId('assistant'), role: 'assistant', content: reply, time: formatTime() }],
-      }));
-      replyTimerRef.current = null;
-      setPending(false);
-    }, 1250);
+
+    fetch(`/api/chat/${encodeURIComponent(conversationId)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: `${messageText}${attachmentText}`, thinking_mode: model === 'depth' }),
+    })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data?.error ?? data?.detail ?? 'Chat request failed');
+        return data as { reply: string };
+      })
+      .then(({ reply }) => {
+        updateConversation(conversationId, (conversation) => ({
+          ...conversation,
+          preview: reply.slice(0, 48) + '...',
+          messages: [...conversation.messages, { id: makeId('assistant'), role: 'assistant', content: reply, time: formatTime() }],
+        }));
+      })
+      .catch((error: Error) => {
+        updateConversation(conversationId, (conversation) => ({
+          ...conversation,
+          messages: [
+            ...conversation.messages,
+            {
+              id: makeId('assistant'),
+              role: 'assistant',
+              content: `Sorry, something went wrong reaching the assistant: ${error.message}`,
+              time: formatTime(),
+            },
+          ],
+        }));
+      })
+      .finally(() => {
+        setPending(false);
+      });
   };
 
   const handleComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
